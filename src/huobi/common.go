@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"io/ioutil"
+	"time"
 )
 
 func GzipEncode(in []byte) ([]byte, error) {
@@ -32,4 +33,11 @@ func GzipDecode(in []byte) ([]byte, error) {
 	}
 	defer reader.Close()
 	return ioutil.ReadAll(reader)
+}
+func parseTS2String(ts int64) string {
+	return parseTS2Time(ts).Format("2006-01-02 15:04:05")
+}
+func parseTS2Time(ts int64) time.Time {
+	//时间戳 1515408671212 去掉 1212
+	return time.Unix(ts/1000, 0)
 }

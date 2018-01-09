@@ -20,3 +20,6 @@ func initTrade(s string) {
 	trades = tradeTemplate
 	trades.Sub = strings.Replace(trades.Sub, "symbol", s, 1)
 }
+func GetTradeConfig() *TradeDetail {
+	return &trades
+}

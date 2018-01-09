@@ -34,7 +34,6 @@ func initWS() (*websocket.Conn, error) {
 	return c, nil
 }
 func Run() {
-
 	for {
 		c, err := initWS()
 		market := input()
@@ -51,10 +50,9 @@ func Run() {
 			log.Println()
 			log.Println()
 			log.Println()
-			c.Close()
 		}
 	}
 	for {
-		time.Sleep(time.Second)
+		time.Sleep(time.Second * 10)
 	}
 }
