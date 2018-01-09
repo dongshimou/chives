@@ -87,6 +87,11 @@ type ResponseTemplate struct {
 	CurrPage   int    `json:"currPage"`
 }
 
+type Key struct {
+	AccessKey string `json:"access_key"`
+	SecretKey string `json:"secret_key"`
+}
+
 func NewError(code int, args ...interface{}) *InnerError {
 	s := InnerError{}
 	return s.New(code, args...)

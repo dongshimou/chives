@@ -1,8 +1,11 @@
 package huobi
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
+	"os"
 	"strings"
 	"time"
 )
@@ -28,4 +31,15 @@ func initTrade(s string) {
 }
 func GetTradeConfig() *TradeDetail {
 	return &trades
+}
+
+func readConfig(fileName string, configObj interface{}) error {
+	file, err := os.Open(fileName)
+	if err != nil {
+		return err
+	}
+
+	content, _ := ioutil.ReadAll(file)
+	err = json.Unmarshal(content, configObj)
+	return err
 }

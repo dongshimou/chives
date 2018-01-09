@@ -34,9 +34,10 @@ func initWS() (*websocket.Conn, error) {
 	return c, nil
 }
 func Run() {
+	market := ""
 	for {
 		c, err := initWS()
-		market := input()
+		market = input()
 		log.Println("所查行情为 :", market)
 		if err != nil {
 			log.Println(err.Error())
@@ -52,7 +53,22 @@ func Run() {
 			log.Println()
 		}
 	}
+	retryTrade := func() {
+		c, err := initWS()
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
+		err = startTrade(c, market)
+		if err != nil {
+			log.Println("==========启动失败正在重新启动==========")
+		}
+	}
 	for {
+		if isTradeClose() {
+			log.Println("即时行情异常关闭,正在重启")
+			go retryTrade()
+		}
 		GetLegal(CNY_USDT)
 		time.Sleep(time.Second * 10)
 	}

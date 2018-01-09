@@ -85,14 +85,14 @@ func startTrade(c *websocket.Conn, market string) (err error) {
 	//发送订阅数据
 	log.Println(trades.Sub, "====", trades.ID)
 	c.WriteJSON(GetTradeConfig())
-	//初始化管道
-	rawData := make(chan []byte, 100)
 	//获得握手以及订阅状态
 	err = helloTrade(c)
 	if err != nil {
 		c.Close()
 		return err
 	}
+	//初始化管道
+	rawData := make(chan []byte, 100)
 	// 处理数据
 	go processData(c, rawData)
 	// 循环读取订阅
