@@ -53,6 +53,7 @@ func Run() {
 		}
 	}
 	for {
+		GetLegal(CNY_USDT)
 		time.Sleep(time.Second * 10)
 	}
 }

@@ -83,6 +83,7 @@ func startTrade(c *websocket.Conn, market string) (err error) {
 	//初始化订阅
 	initTrade(market)
 	//发送订阅数据
+	log.Println(trades.Sub, "====", trades.ID)
 	c.WriteJSON(GetTradeConfig())
 	//初始化管道
 	rawData := make(chan []byte, 100)
