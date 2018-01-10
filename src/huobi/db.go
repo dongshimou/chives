@@ -22,7 +22,7 @@ var (
 
 type Tick struct {
 	OrderID        int64
-	TradeID        int64 `gorm:"index"`
+	TradeID        int64 `gorm:"index;unique"`
 	TradeAmount    float64
 	TradePrice     float64
 	TradeDirection bool
@@ -114,15 +114,12 @@ func GetDBByModel(value interface{}) *gorm.DB {
 }
 
 func saveTick(tick chan TradeTick) {
-	success := true
 	ok := true
 	data := TradeTick{}
 	for {
-		if success {
-			data, ok = <-tick
-			if !ok {
-				return
-			}
+		data, ok = <-tick
+		if !ok {
+			return
 		}
 		tx := CreateTX()
 		insertStatus := true
@@ -148,10 +145,8 @@ func saveTick(tick chan TradeTick) {
 		}
 		if insertStatus {
 			FinishTX(tx)
-			success = true
 		} else {
 			BreakTX(tx)
-			success = false
 		}
 	}
 }

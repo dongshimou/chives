@@ -56,6 +56,10 @@ func getCurrentMaxMinPrice() (max, min float64) {
 func getCurrentAmount() float64 {
 	return currentAmount
 }
+func pong(c *websocket.Conn, msg string) {
+	msg = strings.Replace(msg, "ping", "pong", 1)
+	c.WriteMessage(websocket.TextMessage, []byte(msg))
+}
 func processData(c *websocket.Conn, data chan []byte) {
 	tick := make(chan TradeTick, 1024)
 	defer close(tick)
@@ -73,10 +77,9 @@ func processData(c *websocket.Conn, data chan []byte) {
 		}
 		msg := string(raw)
 		//检查是否是 心跳包
+
 		if in := strings.Index(msg, "ping"); in > 0 {
-			//log.Println("this is a ping !!!")
-			msg = strings.Replace(msg, "ping", "pong", 1)
-			c.WriteMessage(websocket.TextMessage, []byte(msg))
+			pong(c, msg)
 			continue
 		}
 		//获得数据
@@ -96,32 +99,39 @@ func processData(c *websocket.Conn, data chan []byte) {
 }
 
 func helloTrade(c *websocket.Conn) (err error) {
-	_, zipstr, err := c.ReadMessage()
-	if err != nil {
-		log.Println("hello ReadMessage err is ", err.Error())
-		return err
-	}
-	hraw, err := GzipDecode(zipstr)
-	if err != nil {
-		log.Println("hello Gzip err is ", err.Error())
-		return err
-	}
-	h := TradeHello{}
-	err = json.Unmarshal(hraw, &h)
-	if err != nil {
-		log.Println("hello json parse err is ", err.Error())
-		return err
-	}
-	if h.Status != "ok" {
-		log.Println("握手失败,请重试")
-		log.Println(h.ErrMsg)
+	for {
+		_, zipstr, err := c.ReadMessage()
+		if err != nil {
+			log.Println("hello ReadMessage err is ", err.Error())
+			return err
+		}
+		hraw, err := GzipDecode(zipstr)
 		log.Println(string(hraw))
-		return NewError(0, "握手错误")
-	} else {
-		log.Println(h.Subbed)
-		log.Println("========================交易明细========================")
+		if err != nil {
+			log.Println("hello Gzip err is ", err.Error())
+			return err
+		}
+		msg := string(hraw)
+		if in := strings.Index(msg, "ping"); in > 0 {
+			pong(c, msg)
+			continue
+		}
+		h := TradeHello{}
+		err = json.Unmarshal(hraw, &h)
+		if err != nil {
+			log.Println("hello json parse err is ", err.Error())
+			return err
+		}
+		if h.Status != "ok" {
+			log.Println("握手失败,请重试")
+			log.Println(h.ErrMsg)
+			return NewError(0, "握手错误")
+		} else {
+			log.Println(h.Subbed)
+			log.Println("========================交易明细========================")
+		}
+		return nil
 	}
-	return nil
 }
 func startTrade(c *websocket.Conn, market string) (err error) {
 	//初始化订阅
