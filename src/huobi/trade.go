@@ -14,23 +14,31 @@ import (
 var (
 	tradeStatus = STATUS_OPEN
 
-	MIN_FLOAT_INIT = math.MaxFloat64
-	MAX_FLOAT_INIT = -math.MaxFloat64
+	totalMaxPrice float64 = MAX_FLOAT_INIT
+	totalMinPrice float64 = MIN_FLOAT_INIT
+	//totalAve      float64 = 0
+	//totalCount    int64   = 0
 
-	maxPrice float64 = MAX_FLOAT_INIT
-	minPrice float64 = MIN_FLOAT_INIT
-
-	currentMax float64 = MAX_FLOAT_INIT
-	currentMin float64 = MIN_FLOAT_INIT
-
+	currMaxPrice   float64 = MAX_FLOAT_INIT
+	currMinPrice   float64 = MIN_FLOAT_INIT
+	currAve        float64 = 0
+	currCount      float64 = 0
 	currentAmount  float64 = 0
 	currAmountBuy  float64 = 0
 	currAmountSell float64 = 0
+
+	currUpCount   float64 = 0
+	currDownCount float64 = 0
+
+	lastPrice float64 = 0
 )
 
 const (
 	STATUS_CLOSE int32 = 0
 	STATUS_OPEN  int32 = 1
+
+	MIN_FLOAT_INIT = math.MaxFloat64
+	MAX_FLOAT_INIT = -math.MaxFloat64
 )
 
 func isTradeClose() bool {
@@ -43,19 +51,44 @@ func setTradeOpen() {
 	atomic.StoreInt32(&tradeStatus, STATUS_OPEN)
 }
 func setCurrentInit() {
-	currentMax = math.MinInt32
-	currentMin = math.MaxInt32
+	currMaxPrice = math.MinInt32
+	currMinPrice = math.MaxInt32
 	currentAmount, currAmountBuy, currAmountSell = 0, 0, 0
+	currAve = 0
+	currCount, currUpCount, currDownCount = 0, 0, 0
 }
 func getTotalMaxMinPrice() (max, min float64) {
-	return maxPrice, minPrice
+	return totalMaxPrice, totalMinPrice
 }
 func getCurrentMaxMinPrice() (max, min float64) {
-	return currentMax, currentMin
+	return currMaxPrice, currMinPrice
 }
 func getCurrentAmount() float64 {
 	return currentAmount
 }
+func getAveragePrice() float64 {
+	return currAve
+}
+func getLastPrice() float64 {
+	return lastPrice
+}
+func getAverageCount() float64 {
+	return currCount
+}
+func getUpDownCount() (float64, float64) {
+	return currUpCount, currDownCount
+}
+func isUpOrDown() int {
+	temp := math.Abs(currUpCount - currDownCount)
+	if temp < 0 {
+		return -1
+	} else if temp/currCount < 0.1 {
+		return 0
+	} else {
+		return 1
+	}
+}
+
 func pong(c *websocket.Conn, msg string) {
 	msg = strings.Replace(msg, "ping", "pong", 1)
 	c.WriteMessage(websocket.TextMessage, []byte(msg))
@@ -201,11 +234,26 @@ func TradeShow(data *Trade) {
 			str += " : 卖出 <<-- "
 			currAmountSell += v.Amount
 		}
-		currentMin = math.Min(v.Price, currentMin)
-		currentMax = math.Max(v.Price, currentMax)
-		minPrice = math.Min(minPrice, currentMin)
-		maxPrice = math.Max(maxPrice, currentMax)
+
+		currCount++
+		temp := (currCount - 1) / currCount
+		currAve = currAve*temp + v.Price/currCount
+
+		if lastPrice < v.Price {
+			//统计上涨
+			currUpCount++
+		} else if lastPrice > v.Price {
+			//统计下跌
+			currDownCount++
+		}
+		lastPrice = v.Price
+
+		currMinPrice = math.Min(v.Price, currMinPrice)
+		currMaxPrice = math.Max(v.Price, currMaxPrice)
+		totalMinPrice = math.Min(totalMinPrice, currMinPrice)
+		totalMaxPrice = math.Max(totalMaxPrice, currMaxPrice)
 		currentAmount += v.Amount
+
 		str += fmt.Sprintf("价格:%15.4f 成交量:%13.4f ", v.Price, v.Amount)
 		log.Println(str)
 	}
