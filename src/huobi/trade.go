@@ -100,6 +100,7 @@ func recv(c *websocket.Conn, data chan []byte) {
 	for {
 		zipdata, ok := <-data
 		if !ok {
+			log.Println("recv 管道 不存在数据")
 			return
 		}
 		raw, err := GzipDecode(zipdata)

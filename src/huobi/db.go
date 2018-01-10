@@ -1,9 +1,11 @@
 package huobi
 
 import (
+	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
+	"log"
 )
 
 var DBTableConfig = []string{
@@ -32,24 +34,49 @@ type Tick struct {
 func IsDBSave() bool {
 	return dbConfig.DBSave
 }
+func setDBNotSave() {
+	dbConfig.DBSave = false
+}
 func InitDB(market string) (err error) {
 
 	dbConfig = &DBConfig{}
 
 	err = readConfig("./database", &dbConfig)
 	if err != nil {
+		setDBNotSave()
 		return err
 	}
+	func() {
+		temp, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/",
+			dbConfig.DBUser, dbConfig.DBPassword, dbConfig.DBHost, dbConfig.DBPort))
+		defer temp.Close()
+		if err != nil {
+			log.Println(err.Error())
+			setDBNotSave()
+			return
+			//panic(err)
+		}
+		_, err = temp.Exec("CREATE DATABASE IF NOT EXISTS " + dbConfig.DBDatabase + market)
+		if err != nil {
+			log.Println(err.Error())
+			setDBNotSave()
+			return
+			//panic(err)
+		}
+	}()
 	if !dbConfig.DBSave {
 		return nil
 	}
-	args := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local",
-		dbConfig.DBUser, dbConfig.DBPassword, dbConfig.DBHost, dbConfig.DBPort, dbConfig.DBDatabase+market)
 	if db != nil {
 		db.Close()
 	}
+
+	args := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local",
+		dbConfig.DBUser, dbConfig.DBPassword, dbConfig.DBHost, dbConfig.DBPort, dbConfig.DBDatabase+market)
+
 	db, err = gorm.Open("mysql", args)
 	if err != nil {
+		setDBNotSave()
 		return err
 	}
 
@@ -76,9 +103,13 @@ func InitDB(market string) (err error) {
 	if db.HasTable(&Tick{}) == false {
 		init_options()
 		db = db.CreateTable(&Tick{})
-		db.CreateTable()
 	}
-	return db.Error
+	if db.Error != nil {
+		setDBNotSave()
+		return db.Error
+	} else {
+		return nil
+	}
 }
 func Insert(tx *gorm.DB, value interface{}) (err error) {
 	if tx == nil {

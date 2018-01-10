@@ -59,6 +59,7 @@ func Run() {
 	}
 	retryTrade := func() {
 		c, err := initWS()
+		InitDB(market)
 		if err != nil {
 			log.Println(err.Error())
 			return
@@ -79,16 +80,16 @@ func Run() {
 		}
 	}()
 	for {
-
+		setCurrentInit()
+		time.Sleep(time.Minute)
 		getLegal(CNY_USDT)
 		totalmax, totalmin := getTotalMaxMinPrice()
 		currmax, currmin := getCurrentMaxMinPrice()
 		currAmount := getCurrentAmount()
-		setCurrentInit()
 		log.Println(fmt.Sprintf("========================当前 %s 的价格======================", market))
 		log.Println(fmt.Sprintf("===历史的最高价 : %14.4f ===========历史的最低价 : %14.4f ===", totalmax, totalmin))
 		log.Println(fmt.Sprintf("===上分钟最高价 : %14.4f ===========上分钟最低价 : %14.4f ===", currmax, currmin))
 		log.Println(fmt.Sprintf("=======================上分钟成交量: %32.4f ===============", currAmount))
-		time.Sleep(time.Minute)
+
 	}
 }
