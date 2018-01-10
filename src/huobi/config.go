@@ -33,6 +33,19 @@ func GetTradeConfig() *TradeDetail {
 	return &trades
 }
 
+type KeyConfig struct {
+	AccessKey string `json:"access_key"`
+	SecretKey string `json:"secret_key"`
+}
+type DBConfig struct {
+	DBSave     bool   `json:"db_save"`
+	DBHost     string `json:"db_host"`
+	DBPort     string `json:"db_port"`
+	DBUser     string `json:"db_user"`
+	DBPassword string `json:"db_password"`
+	DBDatabase string `json:"db_database"`
+}
+
 func readConfig(fileName string, configObj interface{}) error {
 	file, err := os.Open(fileName)
 	if err != nil {

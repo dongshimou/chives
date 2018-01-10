@@ -41,3 +41,16 @@ func parseTS2Time(ts int64) time.Time {
 	//时间戳 1515408671212 去掉 1212
 	return time.Unix(ts/1000, 0)
 }
+
+func maxF32(a, b float32) float32 {
+	if a > b {
+		return a
+	}
+	return b
+}
+func minF32(a, b float32) float32 {
+	if a > b {
+		return b
+	}
+	return a
+}

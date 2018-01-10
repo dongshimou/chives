@@ -25,7 +25,7 @@ const (
 	LEGAL_RANGE       = "0"  //未知参数默认0
 )
 
-func GetLegal(typeid int) {
+func getLegal(typeid int) {
 
 	arg := fmt.Sprintf("https://api-otc.huobi.pro/v1/otc/trade/list/public"+
 		"?coinId=%d&tradeType=%s&currentPage=%s&payWay=%s&country=%s&merchant=%s&online=%s&range=%s",

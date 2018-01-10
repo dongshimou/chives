@@ -18,8 +18,8 @@ const (
 
 //GET, "/v1/order/orders", nil
 func createUrl(method, path string, para []string) (string, error) {
-	keys := Key{}
-	err := readConfig("./key", &keys)
+	keys := KeyConfig{}
+	err := readConfig("./transkey", &keys)
 	if err != nil {
 		return "", err
 	}

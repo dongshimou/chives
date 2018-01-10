@@ -2,11 +2,13 @@ package huobi
 
 import (
 	"bufio"
-	"github.com/gorilla/websocket"
+	"fmt"
 	"log"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 func input() string {
@@ -38,6 +40,8 @@ func Run() {
 	for {
 		c, err := initWS()
 		market = input()
+		//market = "ethusdt"
+		InitDB(market)
 		log.Println("所查行情为 :", market)
 		if err != nil {
 			log.Println(err.Error())
@@ -64,12 +68,27 @@ func Run() {
 			log.Println("==========启动失败正在重新启动==========")
 		}
 	}
-	for {
-		if isTradeClose() {
-			log.Println("即时行情异常关闭,正在重启")
-			go retryTrade()
+	//检查是否关闭
+	go func() {
+		for {
+			if isTradeClose() {
+				log.Println("即时行情异常关闭,正在重启")
+				go retryTrade()
+			}
+			time.Sleep(time.Second * 10)
 		}
-		GetLegal(CNY_USDT)
+	}()
+	for {
+
+		getLegal(CNY_USDT)
+		totalmax, totalmin := getTotalMaxMinPrice()
+		currmax, currmin := getCurrentMaxMinPrice()
+		currAmount := getCurrentAmount()
+		setCurrentInit()
+		log.Println(fmt.Sprintf("========================当前 %s 的价格======================", market))
+		log.Println(fmt.Sprintf("===历史的最高价 : %14.4f ===========历史的最低价 : %14.4f ===", totalmax, totalmin))
+		log.Println(fmt.Sprintf("===上分钟最高价 : %14.4f ===========上分钟最低价 : %14.4f ===", currmax, currmin))
+		log.Println(fmt.Sprintf("=======================上分钟成交量: %32.4f ===============", currAmount))
 		time.Sleep(time.Minute)
 	}
 }

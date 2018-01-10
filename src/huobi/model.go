@@ -16,8 +16,8 @@ type TradeTick struct {
 }
 type TradeTickData struct {
 	ID        int64   `json:"id"`
-	Amount    float32 `json:"amount"`
-	Price     float32 `json:"price"`
+	Amount    float64 `json:"amount"`
+	Price     float64 `json:"price"`
 	Direction string  `json:"direction"`
 	TS        int64   `json:"ts"`
 }
@@ -85,11 +85,6 @@ type ResponseTemplate struct {
 	TotalPage  int    `json:"totalPage"`
 	Success    bool   `json:"success"`
 	CurrPage   int    `json:"currPage"`
-}
-
-type Key struct {
-	AccessKey string `json:"access_key"`
-	SecretKey string `json:"secret_key"`
 }
 
 func NewError(code int, args ...interface{}) *InnerError {
