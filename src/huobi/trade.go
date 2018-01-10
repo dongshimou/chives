@@ -60,7 +60,38 @@ func pong(c *websocket.Conn, msg string) {
 	msg = strings.Replace(msg, "ping", "pong", 1)
 	c.WriteMessage(websocket.TextMessage, []byte(msg))
 }
-func processData(c *websocket.Conn, data chan []byte) {
+func hello(raw []byte) {
+	h := TradeHello{}
+	err := json.Unmarshal(raw, &h)
+	if err != nil {
+		log.Println("hello json parse err is ", err.Error())
+	}
+	if h.Status != "ok" {
+		log.Println("握手失败,请重试")
+		log.Println(h.ErrMsg)
+	} else {
+		log.Println(h.Subbed)
+		log.Println("========================交易明细========================")
+	}
+}
+func process(raw []byte) *TradeTick {
+	//获得数据
+	v := Trade{}
+	//log.Println(string(raw))
+	err := json.Unmarshal(raw, &v)
+	if err != nil {
+		log.Println("json parse err is ", err.Error())
+	} else {
+		//展示数据
+
+		TradeShow(&v)
+		if IsDBSave() {
+			return &v.Tick
+		}
+	}
+	return nil
+}
+func recv(c *websocket.Conn, data chan []byte) {
 	tick := make(chan TradeTick, 1024)
 	defer close(tick)
 	if IsDBSave() {
@@ -76,25 +107,19 @@ func processData(c *websocket.Conn, data chan []byte) {
 			log.Println("hello Gzip err is ", err.Error())
 		}
 		msg := string(raw)
-		//检查是否是 心跳包
 
 		if in := strings.Index(msg, "ping"); in > 0 {
 			pong(c, msg)
 			continue
-		}
-		//获得数据
-		v := Trade{}
-		//log.Println(string(raw))
-		err = json.Unmarshal(raw, &v)
-		if err != nil {
-			log.Println("json parse err is ", err.Error())
+		} else if in := strings.Index(msg, "status"); in > 0 {
+			hello(raw)
 		} else {
-			//展示数据
-			if IsDBSave() {
-				tick <- v.Tick
+			t := process(raw)
+			if t != nil {
+				tick <- *t
 			}
-			TradeShow(&v)
 		}
+
 	}
 }
 
@@ -141,20 +166,16 @@ func startTrade(c *websocket.Conn, market string) (err error) {
 	//发送订阅数据
 	log.Println(trades.Sub, "====", trades.ID)
 	c.WriteJSON(GetTradeConfig())
-	//获得握手以及订阅状态
-	err = helloTrade(c)
-	if err != nil {
-		c.Close()
-		return err
-	}
+
 	//初始化管道
 	rawData := make(chan []byte, 1024)
 	// 处理数据
-	go processData(c, rawData)
+	go recv(c, rawData)
 	// 循环读取订阅
 	go func() {
 		defer setTradeClose()
 		defer close(rawData)
+		defer c.Close()
 		for {
 			//读取 websocket 数据
 			_, message, err := c.ReadMessage()
