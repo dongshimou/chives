@@ -121,7 +121,7 @@ func TradeShow(data *Trade) {
 		} else {
 			str += " : 卖出 <<-- "
 		}
-		str += fmt.Sprintf("价格:%f 成交量:%f ", v.Price, v.Amount)
+		str += fmt.Sprintf("价格:%15.4f 成交量:%13.4f ", v.Price, v.Amount)
 		log.Println(str)
 	}
 	log.Println(fmt.Sprintf("====%s================ 交易ID : %d ====",

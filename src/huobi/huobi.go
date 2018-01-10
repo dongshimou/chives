@@ -70,6 +70,6 @@ func Run() {
 			go retryTrade()
 		}
 		GetLegal(CNY_USDT)
-		time.Sleep(time.Second * 10)
+		time.Sleep(time.Minute)
 	}
 }
