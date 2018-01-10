@@ -27,8 +27,17 @@ type Tick struct {
 	TradeID        int64 `gorm:"index;unique"`
 	TradeAmount    float64
 	TradePrice     float64
-	TradeDirection bool
+	TradeDirection bool //buy==1 sell==0
 	TradeTimeStamp int64
+}
+type Kline struct {
+	Timestamp int64 `gorm:"index;unique"`
+	Open      float64
+	Close     float64
+	High      float64
+	Low       float64
+	Amount    float64
+	Volume    float64
 }
 
 func IsDBSave() bool {
@@ -104,6 +113,10 @@ func InitDB(market string) (err error) {
 		init_options()
 		db = db.CreateTable(&Tick{})
 	}
+	if db.HasTable(&Kline{}) == false {
+		init_options()
+		db = db.CreateTable(&Kline{})
+	}
 	if db.Error != nil {
 		setDBNotSave()
 		return db.Error
@@ -143,12 +156,25 @@ func FinishTX(tx *gorm.DB) {
 func GetDBByModel(value interface{}) *gorm.DB {
 	return db.Model(value)
 }
-
-func saveTick(tick chan TradeTick) {
-	ok := true
-	data := TradeTick{}
+func saveKline(klines chan Kline) {
 	for {
-		data, ok = <-tick
+		data, ok := <-klines
+		if !ok {
+			return
+		}
+		tx := CreateTX()
+		err := Insert(tx, data)
+		if err != nil {
+			BreakTX(tx)
+		} else {
+			FinishTX(tx)
+		}
+	}
+
+}
+func saveTick(ticks chan TradeTick) {
+	for {
+		data, ok := <-ticks
 		if !ok {
 			return
 		}

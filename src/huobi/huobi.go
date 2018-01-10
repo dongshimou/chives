@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"math"
 )
 
 func input() string {
@@ -47,14 +48,11 @@ func Run() {
 			log.Println(err.Error())
 			continue
 		}
-		err = startTrade(c, market)
+		err = startWS(c, market)
 		if err == nil {
 			break
 		} else {
-			log.Println("==========启动失败正在重新启动==========")
-			log.Println()
-			log.Println()
-			log.Println()
+			log.Println("==========启动失败正在重新启动==========\n\n\n")
 		}
 	}
 	retryTrade := func() {
@@ -64,15 +62,15 @@ func Run() {
 			log.Println(err.Error())
 			return
 		}
-		err = startTrade(c, market)
+		err = startWS(c, market)
 		if err != nil {
-			log.Println("==========启动失败正在重新启动==========")
+			log.Println("==========启动失败正在重新启动==========\n\n\n")
 		}
 	}
 	//检查是否关闭
 	go func() {
 		for {
-			if isTradeClose() {
+			if isDetailClose() {
 				log.Println("即时行情异常关闭,正在重启")
 				go retryTrade()
 			}
@@ -94,8 +92,8 @@ func Run() {
 		log.Println(fmt.Sprintf("=======================上分钟成交量: %32.4f ===============", currAmount))
 
 		temp := isUpOrDown()
-		up, down := getUpDownCount()
-		log.Println(fmt.Sprintf("上涨 %14.0f ==== 下跌 %14.0f ", up, down))
+		up,bala, down := getUpDownCount()
+		log.Println(fmt.Sprintf("上涨 %14.0f == 相等 %14.0f == 下跌 %14.0f ", up,bala,down))
 		if temp > 0 {
 			log.Println(" ===== 上涨多 =====")
 		} else if temp == 0 {
@@ -107,17 +105,27 @@ func Run() {
 		log.Println("============================当前均价====", priceList[minuteCount])
 
 		minuteCount++
-
+		check := func(n, o float64) int {
+			rage := float64(0.0003)
+			temp := n - o
+			if math.Abs(temp) < rage {
+				return 0
+			} else if temp < 0 {
+				return -1
+			} else {
+				return 1
+			}
+		}
 		if minuteCount > 5 {
 			//(priceList[minuteCount-1] - priceList[minuteCount-2])/priceList[minuteCount-2]>0.0001
-			c1 := priceList[minuteCount-1] > priceList[minuteCount-2]
-			c2 := priceList[minuteCount-2] > priceList[minuteCount-3]
-			c3 := priceList[minuteCount-3] > priceList[minuteCount-4]
-			if c1 && c2 && c3 {
+			c1:=check(priceList[minuteCount-1] ,priceList[minuteCount-2] )
+			c2:=check(priceList[minuteCount-2] ,priceList[minuteCount-3] )
+			c3:=check(priceList[minuteCount-3] ,priceList[minuteCount-4] )
+			if c1==1 && c2==1 && c3==1 {
 				log.Println("================上涨中================")
 				log.Println("================上涨中================")
 				log.Println("================上涨中================")
-			} else if !c1 && !c2 && !c3 {
+			} else if c1==-1 && c2==-1 && c3==-1 {
 				log.Println("================下跌中================")
 				log.Println("================下跌中================")
 				log.Println("================下跌中================")

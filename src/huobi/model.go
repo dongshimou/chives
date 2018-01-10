@@ -27,7 +27,7 @@ const ( // TradeListData direction
 	SELL = "sell"
 )
 
-type TradeHello struct {
+type HelloWS struct {
 	ID      string `json:"id"`
 	Subbed  string `json:"subbed"`
 	TS      int64  `json:"ts"`
@@ -35,7 +35,6 @@ type TradeHello struct {
 	ErrCode string `json:"err-code"`
 	ErrMsg  string `json:"err-msg"`
 }
-
 type RESLegal struct {
 	ResponseTemplate
 	Data []LegalDataInfo `json:"data"`
