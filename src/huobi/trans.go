@@ -1,11 +1,9 @@
 package huobi
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/base64"
-	"fmt"
+	"net/url"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -14,10 +12,16 @@ const (
 
 	GET  = "GET"
 	POST = "POST"
+
+	SignatureMethod  = "SignatureMethod"
+	SignatureVersion = "SignatureVersion"
+	AccessKeyId      = "AccessKeyId"
+	Timestamp        = "Timestamp"
+	Signature        = "Signature"
 )
 
 //GET, "/v1/order/orders", nil
-func createUrl(method, path string, para []string) (string, error) {
+func createUrl(method, path string, para map[string]string) (string, error) {
 	keys := KeyConfig{}
 	err := readConfig("./transkey", &keys)
 	if err != nil {
@@ -25,7 +29,7 @@ func createUrl(method, path string, para []string) (string, error) {
 	}
 	access := keys.AccessKey
 
-	scress := keys.SecretKey
+	secret := keys.SecretKey
 
 	host := "api.huobi.pro"
 
@@ -39,20 +43,29 @@ func createUrl(method, path string, para []string) (string, error) {
 	req += NEXT_LINE
 
 	//parameter
-	signMethod := "SignatureMethod=HmacSHA256"
-	signVer := "SignatureVersion=2"
-	accessKeyID := "AccessKeyId=" + access
-	timeStamp := fmt.Sprintf("Timestamp=%04d-%02d-%02dT%02d%%3A%02d%%3A%02d",
-		time.Now().Year(), time.Now().Month(), time.Now().Day(),
-		time.Now().Hour(), time.Now().Minute(), time.Now().Second())
+	signMethod := "HmacSHA256"
+	signVer := "2"
+	accessKeyID := access
+
+	timeStamp := time.Now().UTC().Format(time.RFC3339)
+	timeStamp = strings.TrimRight(timeStamp, "Z")
+	if para == nil {
+		para = map[string]string{}
+	}
+	para[SignatureMethod] = signMethod
+	para[SignatureVersion] = signVer
+	para[AccessKeyId] = accessKeyID
+	para[Timestamp] = timeStamp
+
+	list := []string{}
+
+	for k, v := range para {
+		list = append(list, k+"="+url.QueryEscape(v))
+	}
+	sort.Strings(list)
 
 	parameter := ""
-	para = append(para, signMethod)
-	para = append(para, signVer)
-	para = append(para, accessKeyID)
-	para = append(para, timeStamp)
-	sort.Strings(para)
-	for i, v := range para {
+	for i, v := range list {
 		if i != 0 {
 			parameter += "&"
 		}
@@ -61,12 +74,23 @@ func createUrl(method, path string, para []string) (string, error) {
 
 	unsignmsg := req + parameter
 	//hmacsha256加密
-	sig := hmac.New(sha256.New, []byte(scress))
-	sig.Write([]byte(unsignmsg))
 
-	base64str := base64.StdEncoding.EncodeToString(sig.Sum(nil))
+	base64str := HmacSHA256(unsignmsg, secret)
+	base64str = url.QueryEscape(base64str)
+	para[Signature] = base64str
 
-	url := "https://" + host + path + parameter + "&Signature=" + base64str
+	urls := "https://" + host + path + "?"
 
-	return url, nil
+	first := true
+	for k, v := range para {
+		if !first {
+			urls += "&"
+		}
+		first = false
+		urls += k
+		urls += "="
+		urls += v
+	}
+
+	return urls, nil
 }

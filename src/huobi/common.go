@@ -3,6 +3,9 @@ package huobi
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 	"io/ioutil"
 	"time"
 )
@@ -40,4 +43,10 @@ func parseTS2String(ts int64) string {
 func parseTS2Time(ts int64) time.Time {
 	//时间戳 1515408671212 去掉 212
 	return time.Unix(ts/1000, 0)
+}
+
+func HmacSHA256(message, secret string) string {
+	sig := hmac.New(sha256.New, []byte(secret))
+	sig.Write([]byte(message))
+	return base64.StdEncoding.EncodeToString(sig.Sum(nil))
 }

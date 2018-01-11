@@ -37,6 +37,9 @@ func initWS() (*websocket.Conn, error) {
 	return c, nil
 }
 func Run() {
+	getAccountID()
+	getBalance(SPOT_Account)
+
 	market := ""
 	for {
 		c, err := initWS()
@@ -92,8 +95,8 @@ func Run() {
 		log.Println(fmt.Sprintf("=======================上分钟成交量: %32.4f ===============", currAmount))
 
 		temp := isUpOrDown()
-		up,bala, down := getUpDownCount()
-		log.Println(fmt.Sprintf("上涨 %14.0f == 相等 %14.0f == 下跌 %14.0f ", up,bala,down))
+		up, bala, down := getUpDownCount()
+		log.Println(fmt.Sprintf("上涨 %14.0f == 相等 %14.0f == 下跌 %14.0f ", up, bala, down))
 		if temp > 0 {
 			log.Println(" ===== 上涨多 =====")
 		} else if temp == 0 {
@@ -118,14 +121,14 @@ func Run() {
 		}
 		if minuteCount > 5 {
 			//(priceList[minuteCount-1] - priceList[minuteCount-2])/priceList[minuteCount-2]>0.0001
-			c1:=check(priceList[minuteCount-1] ,priceList[minuteCount-2] )
-			c2:=check(priceList[minuteCount-2] ,priceList[minuteCount-3] )
-			c3:=check(priceList[minuteCount-3] ,priceList[minuteCount-4] )
-			if c1==1 && c2==1 && c3==1 {
+			c1 := check(priceList[minuteCount-1], priceList[minuteCount-2])
+			c2 := check(priceList[minuteCount-2], priceList[minuteCount-3])
+			c3 := check(priceList[minuteCount-3], priceList[minuteCount-4])
+			if c1 == 1 && c2 == 1 && c3 == 1 {
 				log.Println("================上涨中================")
 				log.Println("================上涨中================")
 				log.Println("================上涨中================")
-			} else if c1==-1 && c2==-1 && c3==-1 {
+			} else if c1 == -1 && c2 == -1 && c3 == -1 {
 				log.Println("================下跌中================")
 				log.Println("================下跌中================")
 				log.Println("================下跌中================")
