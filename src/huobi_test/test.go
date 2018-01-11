@@ -1,4 +1,4 @@
-package huobi
+package huobi_test
 
 import (
 	"encoding/json"
@@ -188,12 +188,12 @@ func postOrder(market, orderType string, amount, price float64) bool {
 
 	url, err := createUrl(POST, path, para)
 	if err != nil {
-
+		log.Println("create url error")
 	}
 
 	_, body, errs := goreq.New().Post(url).SendStruct(para).End()
 	if len(errs) != 0 {
-
+		log.Println(" post error")
 	}
 
 	log.Println(body)

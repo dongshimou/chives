@@ -1,4 +1,4 @@
-package huobi
+package huobi_test
 
 import (
 	"encoding/json"

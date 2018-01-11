@@ -8,9 +8,26 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"math"
 )
+
+var (
+	Markets = map[string]bool{}
+)
+
+func addMarket(s string) {
+	Markets[s] = true
+}
+func delMarket(s string) {
+	Markets[s] = false
+}
+func isMarket(s string) bool {
+	v, exist := Markets[s]
+	if !exist || !v {
+		return false
+	}
+	return true
+}
 
 func input() string {
 
@@ -28,20 +45,16 @@ func input() string {
 	return text
 
 }
-func initWS() (*websocket.Conn, error) {
-	c, _, err := websocket.DefaultDialer.Dial("wss://api.huobi.pro/ws", nil)
-	if err != nil {
-		log.Fatal("dial:", err)
-		return nil, err
-	}
-	return c, nil
-}
+
 func Run() {
+	getAccountID()
+	postOrder("ethusdt", SEL_MARKET, 0.002, 0)
 	market := ""
 	for {
 		c, err := initWS()
 		market = input()
 		//market = "ethusdt"
+		addMarket(market)
 		InitDB(market)
 		log.Println("所查行情为 :", market)
 		if err != nil {

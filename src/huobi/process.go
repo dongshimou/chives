@@ -107,18 +107,29 @@ func processRecvRaw(c *websocket.Conn) {
 
 	}
 }
-func sendDetail(market string) error {
+func addDetail(market string) error {
 	//初始化订阅
-	initTrade(market)
+	add := generateAddMarketDetail(market)
 	//设置开始
 	setDetailOpen()
 	//发送订阅数据
-	log.Println(marketDetail.Sub, "====", marketDetail.ID)
+	log.Println(add.Sub, "====", add.ID)
 	//c.WriteJSON(GetMarketDetailConfig())
 
-	b, err := json.Marshal(GetMarketDetailConfig())
+	b, err := json.Marshal(&add)
 	if err != nil {
 		log.Println("订阅 行情 错误")
+		return err
+	}
+	sendRawData <- b
+	return nil
+}
+func delDetail(market string) error {
+	del := generateDelMarketDetail(market)
+
+	b, err := json.Marshal(&del)
+	if err != nil {
+		log.Println("取消 行情 错误")
 		return err
 	}
 	sendRawData <- b
@@ -132,8 +143,8 @@ func sendKline(market string) error {
 	//if info.Timestamp==0{
 	//	info.Timestamp=1325347200
 	//}
-
-	b, err := json.Marshal(getMarketKlineConfig())
+	add := generateAddMarketKline(market)
+	b, err := json.Marshal(&add)
 	if err != nil {
 		log.Println("订阅 kline 错误")
 		return err
@@ -162,6 +173,14 @@ func processSendRaw(c *websocket.Conn) {
 		}
 	}
 }
+func initWS() (*websocket.Conn, error) {
+	c, _, err := websocket.DefaultDialer.Dial("wss://api.huobi.pro/ws", nil)
+	if err != nil {
+		log.Fatal("dial:", err)
+		return nil, err
+	}
+	return c, nil
+}
 func startWS(c *websocket.Conn, market string) (err error) {
 
 	//初始化管道
@@ -173,7 +192,7 @@ func startWS(c *websocket.Conn, market string) (err error) {
 	go processSendRaw(c)
 
 	//添加websocket订阅
-	err = sendDetail(market)
+	err = addDetail(market)
 	if err != nil {
 		return err
 	}
