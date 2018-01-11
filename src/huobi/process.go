@@ -14,9 +14,9 @@ const (
 	MAX_FLOAT_INIT = -math.MaxFloat64
 )
 
-func pong(c *websocket.Conn, msg string) {
+func pong(msg string) {
 	msg = strings.Replace(msg, "ping", "pong", 1)
-	c.WriteMessage(websocket.TextMessage, []byte(msg))
+	sendRawData <- []byte(msg)
 }
 func hello(raw []byte) {
 	h := HelloWS{}
@@ -63,21 +63,21 @@ func processKline(raw []byte) *Kline {
 	}
 	return nil
 }
-func processRaw(c *websocket.Conn, data chan []byte) {
+func processRecvRaw(c *websocket.Conn) {
 	tick := make(chan TradeTick, 1024)
 	defer close(tick)
 	if IsDBSave() {
 		go saveTick(tick)
 	}
 	for {
-		zipdata, ok := <-data
+		zipdata, ok := <-recvRawData
 		if !ok {
-			log.Println("processRaw 管道 不存在数据")
+			log.Println("processRecvRaw 管道 不存在数据")
 			return
 		}
 		raw, err := GzipDecode(zipdata)
 		if err != nil {
-			log.Println("processRaw Gzip err is ", err.Error())
+			log.Println("processRecvRaw Gzip err is ", err.Error())
 		}
 		msg := string(raw)
 		//log.Println(msg)
@@ -87,7 +87,7 @@ func processRaw(c *websocket.Conn, data chan []byte) {
 			return in > 0
 		}
 		if findStr("ping") {
-			pong(c, msg)
+			pong(msg)
 			continue
 		} else if findStr("status") {
 			hello(raw)
@@ -107,28 +107,82 @@ func processRaw(c *websocket.Conn, data chan []byte) {
 
 	}
 }
-func sendDetail(c *websocket.Conn, market string) {
+func sendDetail(market string) error {
 	//初始化订阅
 	initTrade(market)
 	//设置开始
 	setDetailOpen()
 	//发送订阅数据
-	log.Println(trades.Sub, "====", trades.ID)
-	c.WriteJSON(GetTradeConfig())
+	log.Println(marketDetail.Sub, "====", marketDetail.ID)
+	//c.WriteJSON(GetMarketDetailConfig())
+
+	b, err := json.Marshal(GetMarketDetailConfig())
+	if err != nil {
+		log.Println("订阅 行情 错误")
+		return err
+	}
+	sendRawData <- b
+	return nil
+}
+func sendKline(market string) error {
+
+	//orm:=GetDBByModel(&Kline{})
+	//info:=Kline{}
+	//orm.Last(&info)
+	//if info.Timestamp==0{
+	//	info.Timestamp=1325347200
+	//}
+
+	b, err := json.Marshal(getMarketKlineConfig())
+	if err != nil {
+		log.Println("订阅 kline 错误")
+		return err
+	}
+	sendRawData <- b
+	return nil
+}
+
+var (
+	recvRawData chan []byte
+	sendRawData chan []byte
+)
+
+func processSendRaw(c *websocket.Conn) {
+	for {
+		data, ok := <-sendRawData
+		if !ok {
+			log.Println("processSendRaw 管道 不存在数据")
+			return
+		}
+		err := c.WriteMessage(websocket.TextMessage, data)
+		if err != nil {
+			log.Println("send error : ", err.Error())
+			setDetailClose()
+			return
+		}
+	}
 }
 func startWS(c *websocket.Conn, market string) (err error) {
 
-	sendDetail(c, market)
-	//sendKline(c,market)
-
 	//初始化管道
-	rawData := make(chan []byte, 1024)
+	recvRawData = make(chan []byte, 1024)
+	sendRawData = make(chan []byte, 1024)
+
 	// 处理数据
-	go processRaw(c, rawData)
+	go processRecvRaw(c)
+	go processSendRaw(c)
+
+	//添加websocket订阅
+	err = sendDetail(market)
+	if err != nil {
+		return err
+	}
+
 	// 循环读取订阅
 	go func() {
 		defer setDetailClose()
-		defer close(rawData)
+		defer close(recvRawData)
+		defer close(sendRawData)
 		defer c.Close()
 		for {
 			//读取 websocket 数据
@@ -138,7 +192,7 @@ func startWS(c *websocket.Conn, market string) (err error) {
 				return
 			}
 			//放入管道
-			rawData <- message
+			recvRawData <- message
 		}
 	}()
 

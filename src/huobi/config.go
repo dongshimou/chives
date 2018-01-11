@@ -10,27 +10,46 @@ import (
 	"time"
 )
 
-type TradeDetail struct {
+type MarketDetail struct {
 	Sub string `json:"sub"`
 	ID  string `json:"id"`
 }
+type MarketKline struct {
+	Req string `json:"req"`
+	ID  string `json:"id"`
+}
 
-var trades = TradeDetail{}
+var marketDetail = MarketDetail{}
+var marketKline = MarketKline{}
 
-var tradeTemplate = TradeDetail{
+var tradeTemplate = MarketDetail{
 	Sub: "market.symbol.trade.detail",
+	ID:  "id",
+}
+var klineTemplate = MarketKline{
+	Req: "market.symbol.kline.1min",
 	ID:  "id",
 }
 
 func initTrade(s string) {
-	trades = tradeTemplate
-	trades.Sub = strings.Replace(trades.Sub, "symbol", s, 1)
+	marketDetail = tradeTemplate
+	marketDetail.Sub = strings.Replace(marketDetail.Sub, "symbol", s, 1)
 	rand.Seed(time.Now().UnixNano())
 	x := rand.Uint64()
-	trades.ID = strings.Replace(trades.ID, "id", fmt.Sprintf("id%d", x), 1)
+	marketDetail.ID = strings.Replace(marketDetail.ID, "id", fmt.Sprintf("id%d", x), 1)
 }
-func GetTradeConfig() *TradeDetail {
-	return &trades
+func initMarketKline(s string) {
+	marketKline = klineTemplate
+	marketKline.Req = strings.Replace(marketKline.Req, "symbol", s, 1)
+	rand.Seed(time.Now().UnixNano())
+	x := rand.Uint64()
+	marketKline.ID = strings.Replace(marketKline.ID, "id", fmt.Sprintf("id%d", x), 1)
+}
+func GetMarketDetailConfig() *MarketDetail {
+	return &marketDetail
+}
+func getMarketKlineConfig() *MarketKline {
+	return &marketKline
 }
 
 type KeyConfig struct {

@@ -37,9 +37,6 @@ func initWS() (*websocket.Conn, error) {
 	return c, nil
 }
 func Run() {
-	getAccountID()
-	getBalance(SPOT_Account)
-
 	market := ""
 	for {
 		c, err := initWS()

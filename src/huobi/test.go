@@ -11,8 +11,14 @@ import (
 )
 
 var (
-	SPOT_Balance = MyBalances{}
-	OTC_Balance  = MyBalances{}
+	SPOT_Balance = MyBalances{
+		map[string]float64{},
+		map[string]float64{},
+	}
+	OTC_Balance = MyBalances{
+		map[string]float64{},
+		map[string]float64{},
+	}
 )
 
 type MyBalances struct {
@@ -107,7 +113,7 @@ func getBalance(id int64) {
 	}
 
 	raw, err := ioutil.ReadAll(res.Body)
-	log.Println(string(raw))
+	//log.Println(string(raw))
 
 	type tempData struct {
 		ID    int64          `json:"id"`
