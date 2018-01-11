@@ -47,8 +47,17 @@ func input() string {
 }
 
 func Run() {
+	//
+
+	///todo test method
+
+	///todo 查看订单,撤销订单,查看余额
+
 	getAccountID()
 	postOrder("ethusdt", SEL_MARKET, 0.002, 0)
+
+
+	//
 	market := ""
 	for {
 		c, err := initWS()

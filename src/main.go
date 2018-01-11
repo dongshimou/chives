@@ -1,12 +1,10 @@
 package main
 
 import (
-	//"./huobi"
-	"./huobi_test"
+	"./huobi"
 )
 
 func main() {
 
-	//huobi.Run()
-	huobi_test.Run()
+	huobi.Run()
 }
