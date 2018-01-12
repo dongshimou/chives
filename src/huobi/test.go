@@ -160,7 +160,10 @@ const (
 	BUY_LIMIT  = "buy-limit"   //限价买
 	SELL_LIMIT = "sell-limit"  //限价卖
 )
-
+type orderResponse struct {
+	Status string `json:"status"`
+	Data string `json:"data"`
+}
 func postOrder(market, orderType string, amount, price float64) bool {
 
 	para := map[string]interface{}{
@@ -188,12 +191,41 @@ func postOrder(market, orderType string, amount, price float64) bool {
 
 	url, err := createUrl(POST, path, para)
 	if err != nil {
-
+		log.Println(err.Error())
+		return false
 	}
 
 	_, body, errs := goreq.New().Post(url).SendStruct(para).End()
 	if len(errs) != 0 {
+		log.Println("HTTP errors")
+		return false
+	}
 
+	log.Println(body)
+
+	return true
+}
+
+func closeOrder(id interface{})bool{
+
+	//POST /v1/order/orders/{order-id}/submitcancel
+
+	para:=map[string]interface{}{
+		"order-id":id,
+	}
+
+	path:=fmt.Sprintf("/v1/order/orders/%v/submitcancel",id)
+
+	url, err := createUrl(POST, path, para)
+	if err != nil {
+		log.Println(err.Error())
+		return false
+	}
+	resJson:=orderResponse{}
+	_, body, errs := goreq.New().Post(url).SendStruct(para).BindBody(&resJson).End()
+	if len(errs) != 0 {
+		log.Println("HTTP errors")
+		return false
 	}
 
 	log.Println(body)

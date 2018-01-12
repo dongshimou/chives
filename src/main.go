@@ -6,9 +6,9 @@ import (
 
 func main() {
 
-	huobi.Tools_Detail()
+	//huobi.Tools_Detail()
 
 	//huobi.Tools_GetCNY()
-	//huobi.Tools_PostOrder()
+	huobi.Tools_PostOrder()
 
 }
