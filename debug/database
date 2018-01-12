@@ -1,8 +1,8 @@
 {
 "db_save":false,
-"db_host":"",
-"db_port":"",
-"db_user":"",
-"db_password":"",
-"db_database":""
+"db_host":"45.248.85.163",
+"db_port":"3306",
+"db_user":"skadi",
+"db_password":"123456",
+"db_database":"huobi_pro_"
 }

@@ -1,9 +1,8 @@
 package huobi
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"github.com/smallnest/goreq"
 	"log"
 	"net/http"
 )
@@ -31,32 +30,24 @@ func getLegal(typeid int) {
 		"?coinId=%d&tradeType=%s&currentPage=%s&payWay=%s&country=%s&merchant=%s&online=%s&range=%s",
 		typeid, LEGAL_TRADETYPE, LEGAL_CURRENTPAGE, LEGAL_PAYWAY, LEGAL_COUNTRY, LEGAL_MERCHANT, LEGAL_ONLINE, LEGAL_RANGE)
 
-	res, err := http.Get(arg)
-	defer res.Body.Close()
-	if err != nil {
-		log.Println(err.Error())
+	resJson := RESLegal{}
+	res, _, errs := goreq.New().Get(arg).BindBody(&resJson).End()
+	if errs != nil {
+		log.Println("HTTP 错误")
 		return
 	}
 	if res.StatusCode != http.StatusOK {
 		log.Println("返回失败")
 		return
 	}
-	raw, err := ioutil.ReadAll(res.Body)
-	//log.Println(string(raw))
-	data := RESLegal{}
 
-	err = json.Unmarshal(raw, &data)
-	if err != nil {
-		log.Println("json parse error")
-		return
-	}
 	log.Println("========================================================")
 	if typeid == CNY_BTC {
 		log.Println(CNY_BTC_STR)
 	} else {
 		log.Println(CNY_USDT_STR)
 	}
-	for _, v := range data.Data {
+	for _, v := range resJson.Data {
 		log.Println(fmt.Sprintf(" === 价格 : %.2f, 当前量 : %12.2f  [ 当月成交 : %8d === %s  ]",
 			v.Price, v.TradeCount, v.TradeMonthTimes, v.UserName))
 	}
