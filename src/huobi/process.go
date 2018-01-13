@@ -29,7 +29,6 @@ func hello(raw []byte) {
 		log.Println(h.ErrMsg)
 	} else {
 		log.Println(h.Subbed)
-		log.Println("========================交易明细========================")
 	}
 }
 func processDetail(raw []byte) *TradeTick {

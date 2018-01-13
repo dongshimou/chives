@@ -69,13 +69,9 @@ const (
 )
 
 func createUrl(method, path string, para map[string]interface{}) (string, error) {
-	keys := KeyConfig{}
-	err := readConfig("./transkey", &keys)
-	if err != nil {
-		return "", err
-	}
-	access := keys.AccessKey
+	keys:=getKeyConfig()
 
+	access := keys.AccessKey
 	secret := keys.SecretKey
 
 	host := "api.huobi.pro"

@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"math"
 	"strconv"
 )
 
@@ -30,17 +29,11 @@ func isMarket(s string) bool {
 	return true
 }
 
-func input() string {
-
-	log.Println("========================================")
-	log.Println("输入你要查看的即时数据的交易类型:")
-	log.Println("如 : ethusdt ")
-	log.Println("查询 eth 与 usdt 的即时行情")
-	log.Println("========================================")
-
-	return goin()
-
+func init() {
+	initConfig()
+	getAccountID()
 }
+
 func goin() string {
 	reader := bufio.NewReader(os.Stdin)
 	text, _ := reader.ReadString('\n')
@@ -48,7 +41,29 @@ func goin() string {
 	text = strings.TrimSpace(text)
 	return text
 }
-func Tools_GetCNY() {
+
+func Run() {
+	for {
+		log.Println("input : =========================")
+		log.Println(" show_cny     :")
+		log.Println(" create_order :")
+		log.Println(" open_detail  :")
+		log.Println(" close_show   :")
+		log.Println(" open_show    :")
+		log.Println("        =========================")
+
+		cmd := goin()
+		switch cmd {
+		case "show_cny":
+			 startTools_GetCNY(initToolsGetCNY())
+		case "create_order":
+			 startTools_PostOrder(initTools_PostOrder())
+		case "open_detail":
+			 startTools_Detail(initTools_Detail())
+			}
+	}
+}
+func initToolsGetCNY() (int, uint64) {
 	log.Println("input market : usdt , btc . It will show exchange price with CNY ")
 	in := goin()
 	market := 2
@@ -63,13 +78,15 @@ func Tools_GetCNY() {
 	if err != nil {
 		x = 60
 	}
+	return market, x
+}
+func startTools_GetCNY(mar int, dur uint64) {
 	for {
-		getLegal(market)
-		time.Sleep(time.Second * time.Duration(x))
+		getLegal(mar)
+		time.Sleep(time.Second * time.Duration(dur))
 	}
 }
-func Tools_PostOrder() {
-	getAccountID()
+func initTools_PostOrder() (string, string, float64, float64) {
 	for {
 		log.Println("\n\n\n\n\n==============================")
 		log.Println("====输入交易对==== 如 : ethusdt")
@@ -122,33 +139,31 @@ func Tools_PostOrder() {
 			log.Println("price error")
 			continue
 		}
-		postOrder(market, ordertype, a, p)
+		return market, ordertype, a, p
 	}
 }
-func Tools_Detail() {
+func startTools_PostOrder(market, ordertype string, a, p float64) {
+	createOrder(market, ordertype, a, p)
+}
+func initTools_Detail() string {
+	setDetailClose()
+	log.Println("========================================")
+	log.Println("输入你要查看的即时数据的交易类型:")
+	log.Println("如 : ethusdt ")
+	log.Println("查询 eth 与 usdt 的即时行情")
+	log.Println("========================================")
+	return goin()
+}
+func startTools_Detail(market string) {
 
-	market := ""
-	for {
+	retryDetail := func() {
+
 		c, err := initWS()
-		market = input()
-		//market = "ethusdt"
-		addMarket(market)
-		InitDB(market)
-		log.Println("所查行情为 :", market)
 		if err != nil {
-			log.Println(err.Error())
-			continue
+			log.Println("初始化 websocket 错误")
+			return
 		}
-		err = startWS(c, market)
-		if err == nil {
-			break
-		} else {
-			log.Println("==========启动失败正在重新启动==========\n\n\n")
-		}
-	}
-	retryTrade := func() {
-		c, err := initWS()
-		InitDB(market)
+		err=InitDB(market)
 		if err != nil {
 			log.Println(err.Error())
 			return
@@ -157,17 +172,23 @@ func Tools_Detail() {
 		if err != nil {
 			log.Println("==========启动失败正在重新启动==========\n\n\n")
 		}
+		addMarket(market)
 	}
+
 	//检查是否关闭
 	go func() {
 		for {
 			if isDetailClose() {
-				log.Println("即时行情异常关闭,正在重启")
-				go retryTrade()
+				log.Println("正在启动 即时行情")
+				go retryDetail()
 			}
-			time.Sleep(time.Second * 10)
+			time.Sleep(time.Second * 3)
 		}
 	}()
 
-	myideal(market)
+	//myideal(market)
+
+	for {
+		time.Sleep(time.Minute)
+	}
 }

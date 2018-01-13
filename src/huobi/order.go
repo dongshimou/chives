@@ -39,6 +39,12 @@ var (
 	OTC_Account  int64 = 0 //c2cID
 )
 
+func getSPOTBalance(symbol string)float64{
+	return SPOT_Balance.TradeBalance[symbol]
+}
+func getOTCBalance(symbol string)float64{
+	return OTC_Balance.TradeBalance[symbol]
+}
 func getAccountID() {
 
 	path := "/v1/account/accounts"
@@ -160,11 +166,9 @@ const (
 	BUY_LIMIT  = "buy-limit"   //限价买
 	SELL_LIMIT = "sell-limit"  //限价卖
 )
-type orderResponse struct {
-	Status string `json:"status"`
-	Data string `json:"data"`
-}
-func postOrder(market, orderType string, amount, price float64) bool {
+
+//下单
+func createOrder(market, orderType string, amount, price float64) bool {
 
 	para := map[string]interface{}{
 		//api，如果使用借贷资产交易，请填写‘margin-api’
@@ -200,28 +204,133 @@ func postOrder(market, orderType string, amount, price float64) bool {
 		log.Println("HTTP errors")
 		return false
 	}
-
 	log.Println(body)
-
 	return true
 }
 
-func closeOrder(id interface{})bool{
+type OrderResponse struct {
+	Status string      `json:"status"`
+	Data   interface{} `json:"data"`
+}
+
+type orderInfoResponse struct {
+	ID              int64  `json:"id"`
+	Symbol          string `json:"symbol"`
+	AccountID       int64  `json:"account-id"`
+	Amount          string `json:"amount"` //float64
+	Price           string `json:"price"`  //float64
+	CreatedAt       int64  `json:"created-at"`
+	Type            string `json:"type"`
+	FieldAmount     string `json:"field-amount"`      //float64
+	FieldCashAmount string `json:"field-cash-amount"` //float64
+	FieldFees       string `json:"field-fees"`        //float64
+	FinishedAt      int64  `json:"finished-at"`
+	UserID          int64  `json:"user-id"`
+	Source          string `json:"source"`
+	State           string `json:"state"`
+	CanceledAt      int64  `json:"canceled-at"`
+	Exchange        string `json:"exchange"`
+	Batch           string `json:"batch"`
+}
+//GET /v1/order/orders/{order-id} 查询某个订单详情
+func getOrderInfo(id interface{}) {
+
+	para := map[string]interface{}{
+		"order-id": id,
+	}
+	path := fmt.Sprintf("/v1/order/orders/%v", id)
+
+	url, err := createUrl(POST, path, para)
+	if err != nil {
+
+	}
+	resJson := OrderResponse{}
+	info := orderInfoResponse{}
+	resJson.Data = info
+	_, _, errs := goreq.New().Get(url).BindBody(&resJson).End()
+	if len(errs) != 0 {
+		log.Println("HTTP errors")
+		return
+	}
+	status := "订单状态:"
+	switch info.State {
+	// pre-submitted 准备提交,
+	case "pre-submitted":
+		status += " 准备提交 "
+		// submitting , submitted 已提交,
+	case "submitting", "submitted":
+		status += " 已提交 "
+		// partial-filled 部分成交,
+	case "partial-filled":
+		status += " 部分成交 "
+		// partial-canceled 部分成交撤销,
+	case "partial-canceled":
+		status += " 部分成交撤销 "
+	// filled 完全成交,
+	case "filled":
+		status += " 完全成交 "
+	// canceled 已撤销
+	case "canceled":
+		status += " 已撤销 "
+	}
+	log.Println(status + fmt.Sprintf(" 交易对:%s 已成交数量:%s 已成交金额:%s 订单ID:%d 订单价格:%s ",
+		info.Type, info.FieldAmount, info.FieldCashAmount, info.ID, info.Price))
+}
+
+//GET /v1/order/orders 查询当前委托、历史委托
+func queryHistoryOrder(market string) {
+	/*
+	GET /v1/order/orders 查询当前委托、历史委托
+	参数名称	是否必须	类型	描述	默认值	取值范围
+	   symbol	true	string	交易对		btcusdt, bccbtc, rcneth ...
+	   types	false	string	查询的订单类型组合，使用','分割		buy-market：市价买, sell-market：市价卖, buy-limit：限价买, sell-limit：限价卖
+	   start-date	false	string	查询开始日期, 日期格式yyyy-mm-dd
+	   end-date	false	string	查询结束日期, 日期格式yyyy-mm-dd
+	   states	true	string	查询的订单状态组合，使用','分割		pre-submitted 准备提交, submitted 已提交, partial-filled 部分成交, partial-canceled 部分成交撤销, filled 完全成交, canceled 已撤销
+	   from	false	string	查询起始 ID
+	   direct	false	string	查询方向		prev 向前，next 向后
+	   size	false	string	查询记录大小
+	*/
+
+	para:=map[string]interface{}{
+		"symbol":market,
+		"states":"submitted",
+	}
+	path:="/v1/order/orders"
+
+	url,err:=createUrl(GET,path,para)
+	if err!=nil{
+		log.Println(err.Error())
+		return
+	}
+
+	resJson := OrderResponse{}
+	resJson.Data=orderInfoResponse{}
+	_, _, errs := goreq.New().Get(url).BindBody(&resJson).End()
+	if len(errs) != 0 {
+		log.Println("HTTP errors")
+		return
+	}
+}
+
+// 取消订单
+func closeOrder(id interface{}) bool {
 
 	//POST /v1/order/orders/{order-id}/submitcancel
 
-	para:=map[string]interface{}{
-		"order-id":id,
+	para := map[string]interface{}{
+		"order-id": id,
 	}
 
-	path:=fmt.Sprintf("/v1/order/orders/%v/submitcancel",id)
+	path := fmt.Sprintf("/v1/order/orders/%v/submitcancel", id)
 
 	url, err := createUrl(POST, path, para)
 	if err != nil {
 		log.Println(err.Error())
 		return false
 	}
-	resJson:=orderResponse{}
+	resJson := OrderResponse{}
+	resJson.Data=""
 	_, body, errs := goreq.New().Post(url).SendStruct(para).BindBody(&resJson).End()
 	if len(errs) != 0 {
 		log.Println("HTTP errors")

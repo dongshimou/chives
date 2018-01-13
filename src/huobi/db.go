@@ -48,12 +48,10 @@ func setDBNotSave() {
 }
 func InitDB(market string) (err error) {
 
-	dbConfig = &DBConfig{}
-
-	err = readConfig("./database", &dbConfig)
-	if err != nil {
-		setDBNotSave()
-		return err
+	dbConfig = getDBConfig()
+	if !IsDBSave(){
+		log.Println("不保存到数据库")
+		return nil
 	}
 	func() {
 		temp, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/",

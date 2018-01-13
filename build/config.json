@@ -1,0 +1,14 @@
+{
+  "database":{
+    "db_save":false,
+    "db_host":"",
+    "db_port":"",
+    "db_user":"",
+    "db_password":"",
+    "db_database":"huobi_pro_"
+  },
+  "trans_key":{
+    "access_key":"",
+    "secret_key":""
+  }
+}

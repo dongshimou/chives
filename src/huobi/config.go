@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"log"
 )
 
 type addMarketDetail struct {
@@ -71,14 +72,31 @@ type DBConfig struct {
 	DBPassword string `json:"db_password"`
 	DBDatabase string `json:"db_database"`
 }
-
+type Config struct {
+	Database DBConfig `json:"database"`
+	TransKey KeyConfig `json:"trans_key"`
+}
 func readConfig(fileName string, configObj interface{}) error {
 	file, err := os.Open(fileName)
 	if err != nil {
 		return err
 	}
-
 	content, _ := ioutil.ReadAll(file)
 	err = json.Unmarshal(content, configObj)
 	return err
+}
+func getDBConfig()*DBConfig{
+	return &chivesConfig.Database
+}
+func getKeyConfig()*KeyConfig{
+	return &chivesConfig.TransKey
+}
+var(
+	chivesConfig = Config{}
+)
+func initConfig(){
+	err:=readConfig("./config.json",&chivesConfig)
+	if err!=nil{
+		log.Println(err.Error())
+	}
 }

@@ -14,6 +14,7 @@ const (
 
 var (
 	tradeStatus = STATUS_OPEN
+	showTradeDetail =STATUS_CLOSE
 
 	totalMaxPrice float64 = MAX_FLOAT_INIT
 	totalMinPrice float64 = MIN_FLOAT_INIT
@@ -31,8 +32,17 @@ var (
 	currDownCount    float64 = 0
 
 	lastPrice float64 = 0
+	lastTradeDetail=""
 )
-
+func openShowDetail(){
+	showTradeDetail=STATUS_OPEN
+}
+func closeShowDetail(){
+	showTradeDetail=STATUS_CLOSE
+}
+func isShowDetail()bool{
+	return showTradeDetail==STATUS_OPEN
+}
 func isDetailClose() bool {
 	return atomic.LoadInt32(&tradeStatus) == STATUS_CLOSE
 }
@@ -84,7 +94,7 @@ func isUpOrDown() int {
 	}
 }
 func showDetail(data *Trade) {
-	show := func(v *TradeTickData) {
+	show := func(v *TradeTickData)string {
 		str := parseTS2String(v.TS)
 		if v.Direction == BUY {
 			str += " : 买入 -->> "
@@ -117,17 +127,24 @@ func showDetail(data *Trade) {
 		currentAmount += v.Amount
 
 		str += fmt.Sprintf("价格:%15.4f 成交量:%13.4f ", v.Price, v.Amount)
-		log.Println(str)
 		{
 			//kline 数据
 
 			//可以通过api请求
 		}
+		return str
 	}
-	log.Println(fmt.Sprintf("====%s================ 交易ID : %d ====",
-		parseTS2String(data.Tick.TS), data.Tick.ID))
+	detailStr:=""
+	detailStr+=fmt.Sprintf("====%s================ 交易ID : %d ====",
+		parseTS2String(data.Tick.TS), data.Tick.ID)
+	detailStr+=NEXT_LINE
 
 	for _, v := range data.Tick.Data {
-		show(&v)
+		detailStr+=show(&v)
+		detailStr+=NEXT_LINE
+	}
+	lastTradeDetail=detailStr
+	if isShowDetail(){
+		log.Print(detailStr)
 	}
 }
