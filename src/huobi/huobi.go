@@ -32,6 +32,8 @@ func isMarket(s string) bool {
 func init() {
 	initConfig()
 	getAccountID()
+	getBalance(SPOT_Account)
+	getBalance(OTC_Account)
 }
 
 func goin() string {
@@ -50,17 +52,22 @@ func Run() {
 		log.Println(" open_detail  :")
 		log.Println(" close_show   :")
 		log.Println(" open_show    :")
+		log.Println(" list_order   :")
 		log.Println("        =========================")
 
 		cmd := goin()
 		switch cmd {
 		case "show_cny":
-			 startTools_GetCNY(initToolsGetCNY())
+			startTools_GetCNY(initToolsGetCNY())
 		case "create_order":
-			 startTools_PostOrder(initTools_PostOrder())
+			startTools_PostOrder(initTools_PostOrder())
 		case "open_detail":
-			 startTools_Detail(initTools_Detail())
-			}
+			startTools_Detail(initTools_Detail())
+		case "list_order":
+			queryHistoryOrder(goin())
+		case "balance":
+			log.Println(SPOT_Balance.TradeBalance[goin()])
+		}
 	}
 }
 func initToolsGetCNY() (int, uint64) {
@@ -163,7 +170,7 @@ func startTools_Detail(market string) {
 			log.Println("初始化 websocket 错误")
 			return
 		}
-		err=InitDB(market)
+		err = InitDB(market)
 		if err != nil {
 			log.Println(err.Error())
 			return
